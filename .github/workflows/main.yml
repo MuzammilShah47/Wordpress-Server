@@ -1,0 +1,24 @@
+name: Deploy to Azure
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up SSH agent
+      uses: webfactory/ssh-agent@v0.5.3
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+    - name: Deploy to WordPress VMs
+      run: |
+        ssh azure_user@VM1_IP "sudo rm -rf /var/www/html/wordpress && git clone https://github.com/yourusername/yourrepo.git /var/www/html/wordpress && sudo chown -R www-data:www-data /var/www/html/wordpress && sudo chmod -R 755 /var/www/html/wordpress"
+        ssh azure_user@VM2_IP "sudo rm -rf /var/www/html/wordpress && git clone https://github.com/yourusername/yourrepo.git /var/www/html/wordpress && sudo chown -R www-data:www-data /var/www/html/wordpress && sudo chmod -R 755 /var/www/html/wordpress"
