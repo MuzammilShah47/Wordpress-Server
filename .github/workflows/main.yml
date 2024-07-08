@@ -16,7 +16,7 @@ jobs:
     - name: Set up SSH agent
       uses: webfactory/ssh-agent@v0.5.3
       with:
-        ssh-private-key: ${{ secret_key }}
+        ssh-private-key: SECRET_KEY
 
     - name: Deploy to WordPress VMs
       run: |
