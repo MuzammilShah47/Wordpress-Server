@@ -1,0 +1,74 @@
+---
+- hosts: wordpress
+  become: yes
+  tasks:
+    - name: Update and install dependencies
+      apt:
+        name:
+          - nginx
+          - php-fpm
+          - php-mysql
+          - wget
+          - unzip
+          - git
+        state: present
+        update_cache: yes
+
+    - name: Clone WordPress repository from GitHub
+      git:
+        repo: 'git@github.com:MuzammilShah47/Wordpress-Server.git' # Change 'your-repo' to your actual GitHub repository
+        dest: /var/www/html
+        version: master
+        force: yes
+
+    - name: Copy wp-config-sample.php to wp-config.php
+      copy:
+        src: /var/www/html/wp-config-sample.php
+        dest: /var/www/html/wp-config.php
+
+    - name: Update wp-config.php
+      lineinfile:
+        path: /var/www/html/wp-config.php
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+      with_items:
+        - { regexp: "^define\\('DB_NAME'.*", line: "define('DB_NAME', 'wordpress');" }
+        - { regexp: "^define\\('DB_USER'.*", line: "define('DB_USER', 'wordpressuser');" }
+        - { regexp: "^define\\('DB_PASSWORD'.*", line: "define('DB_PASSWORD', 'password');" }
+        - { regexp: "^define\\('DB_HOST'.*", line: "define('DB_HOST', 'VM3_IP');" } # Replace VM3_IP with the IP of your MySQL server
+
+    - name: Configure Nginx for WordPress
+      copy:
+        content: |
+          server {
+              listen 443;
+              server_name _;
+              root /var/www/html;
+
+              index index.php index.html index.htm;
+
+              location / {
+                  try_files $uri $uri/ /index.php?$args;
+              }
+
+              location ~ \.php$ {
+                  include snippets/fastcgi-php.conf;
+                  fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
+              }
+
+              location ~ /\.ht {
+                  deny all;
+              }
+          }
+        dest: /etc/nginx/sites-available/default
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart Nginx
+
+  handlers:
+    - name: Restart Nginx
+      service:
+        name: nginx
+        state: restarted
+
